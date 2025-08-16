@@ -7,19 +7,19 @@ Function New-VerificationFile {
     [OutputType("pscustomobject")]
     param(
         [Parameter(Mandatory=$false,position=0)]
-        [String]$Path,
+        [String]$rootpath,
         [Parameter(Mandatory=$false, position=1)]
-        [String]$Output
+        [String]$OutputPath
     )
    
-    [console]::write("-─◉ generating new verification file $($global:_csverify.prop.invoke($Path))`n")
+    [console]::write("-─◉ generating new verification file $($global:_csverify.prop.invoke($rootpath))`n")
     
-    $path = $(Get-ItemProperty $Path).FullName
-    $outPath = $(Get-ItemProperty $Output).FullName
+    $rootpath = $(Get-ItemProperty $rootpath).FullName
+    $outPath = $(Get-ItemProperty $OutputPath).FullName
    
-    New-CheckSum -Path $path | Out-File -FilePath "$outPath\verification.txt" -Encoding utf8
+    New-CheckSum -Path $rootpath | Out-File -FilePath "$outPath\verification.txt" -Encoding utf8
     
-    [console]::write("  └─◉ $(Get-ColorTune -Text "verification file created" -color green) $($global:_csverify.prop.invoke("$Output\verification.txt"))`n")
+    [console]::write("  └─◉ $(Get-ColorTune -Text "verification file created" -color green) $($global:_csverify.prop.invoke("$outPath\verification.txt"))`n")
     
     Read-CheckSum -File "$outPath\verification.txt"
 }
