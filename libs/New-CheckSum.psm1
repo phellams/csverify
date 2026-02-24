@@ -4,6 +4,26 @@ using module modules\cfbytes\cfbytes-class.psm1
 .SYNOPSIS
 #>
 Function New-CheckSum (){
+    <#
+    .SYNOPSIS
+        Generates a new checksum file
+
+    .DESCRIPTION
+        Generates a new checksum file
+
+    .PARAMETER Path
+        The path to generate the checksum file for
+
+    .EXAMPLE
+        New-CheckSum -Path ./dist/choco
+
+        Generates a new checksum file for the ./dist/choco folder
+
+    .EXAMPLE
+        New-CheckSum -Path ./dist/choco/tools
+
+        Generates a new checksum file for the ./dist/choco/tools folder
+    #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$True,Position=1)]
@@ -17,28 +37,33 @@ VERIFICATION
 Verification is intended to assist the moderators and community
 in verifying that this package's contents are trustworthy.
 
-To Verify the files in this package, please download/Install module csverify from chocalatey.org or from the powershell gallery.
+To Verify the files in this package, please download/Install module 
+csverify using one of the following methods:
 
 Method 1: Install from Powershell Gallery
-
+•----------------------------------------------------------------------•
 Install-Module -Name csverify
 Import-Module -Name csverify
 
 Method 2: Install from Chocolatey.org
+•----------------------------------------------------------------------•
 choco install csverify
 
-Method 3: Download from GitHub
-https://github.com/nytescipts/csverify/releases
+Method 3: Download from GitHub and install from the nupkg or zip file
+•----------------------------------------------------------------------•
+https://github.com/phellams/csverify/releases
 
 Method 4: Clone the repository and run the module from source
+•----------------------------------------------------------------------•
 git clone https://github.com/nytescipts/csverify.git
 cd csverify
 import-module .\
 
-Then run the following command:
+Then run the following command from the root of the module:
+
 Test-Verification
 
--[checksum hash]-
+-[CHECKSUM HASHES]-
 ___________________
 '@
     [console]::write("-─◉ generating new checksums from path $($global:_csverify.prop.invoke("$Path\*"))`n")
