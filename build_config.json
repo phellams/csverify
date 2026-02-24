@@ -1,6 +1,6 @@
 {
-    "PSModeule": {
-        "modulename": "csverify",
+    "PSModule": {
+        "moduleName": "csverify",
         "releasetype": "public",
         "gituser": "sgkens",
         "gitgroup": "phellams",
