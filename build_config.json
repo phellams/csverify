@@ -1,0 +1,32 @@
+{
+    "PSModeule": {
+        "modulename": "csverify",
+        "releasetype": "public",
+        "gituser": "sgkens",
+        "gitgroup": "phellams",
+        "gitlabid": "",
+        "gitlabid_public": "66524004",
+        "license": "MIT",
+        "iconurl": "https://raw.githubusercontent.com/phellams/phellams-general-resources/main/logos/csverify/dist/png/csverify-128x128.png",
+        "phwriter": true,
+        "phwriter_source": "https://gitlab.com/phellams/csverify/-/blob/main/README.md",
+        "pester_test_files": [
+            ".\\cmdlets\\*.psm1",
+            ".\\*.psm1"
+        ],
+        "modulefiles": [
+            "csverify.psm1",
+            "csverify.psd1",
+            "LICENSE",
+            "icon.png",
+            "README.md",
+            "readme.txt"
+        ],
+        "modulefolders": [
+            "libs"
+        ],
+        "moduleexclude": [
+            "commit-helper.ps1"
+        ]
+    }
+}
