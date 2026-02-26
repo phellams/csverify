@@ -1,0 +1,35 @@
+VERIFICATION
+Verification is intended to assist the moderators and community
+in verifying that this package's contents are trustworthy.
+
+To Verify the files in this package, please download/Install module 
+csverify using one of the following methods:
+
+Method 1: Install from Powershell Gallery
+•----------------------------------------------------------------------•
+Install-Module -Name csverify
+Import-Module -Name csverify
+
+Method 2: Install from Chocolatey.org
+•----------------------------------------------------------------------•
+choco install csverify
+
+Method 3: Download from GitHub and install from the nupkg or zip file
+•----------------------------------------------------------------------•
+https://github.com/phellams/csverify/releases
+
+Method 4: Clone the repository and run the module from source
+•----------------------------------------------------------------------•
+git clone https://github.com/nytescipts/csverify.git
+cd csverify
+import-module .\
+
+Then run the following command from the root of the module:
+
+Test-Verification
+
+-[CHECKSUM HASHES]-
+___________________
+0.07KB | FC6FC10FA3099F8D1346565B4AD57A4A57FAB2933C676E0B32CD4C7853B5C341 | .\test-module.psm1 
+3.16KB | 7C3178BEC3EED88F93C86F8F3ECF4356BAA3EB7559965C2BE8C20D885C057519 | .\test-module.psd1 
+0.26KB | AAF6E94F5ED8EA04E93F0F407EBFC594E4C87DBB63FF2AEFBB65D6B7E4D61FB5 | .\libs\cmdlet-1.psm1 

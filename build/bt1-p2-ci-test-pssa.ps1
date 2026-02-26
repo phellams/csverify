@@ -1,1 +1,0 @@
-Invoke-ScriptAnalyzer -Path '.\' -Recurse -severity warning -excluderule PSUseBOMForUnicodeEncodedFile,PSAvoidUsingWriteHost || exit 1

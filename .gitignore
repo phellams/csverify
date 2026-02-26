@@ -1,4 +1,9 @@
-/dist
-/tools/VERIFICATION.txt
+dist
+tools/commit-helper.ps1
+tools/VERIFICATION.txt
+build.env
 coverage.xml
 testResults.xml
+libs/help_metadata
+automator-devops
+commit-helper.ps1

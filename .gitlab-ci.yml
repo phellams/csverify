@@ -1,26 +1,333 @@
+# _______________________________________________________________
+# ########| @Default values for all jobs unless overridden |#####
+
+
+default:
+  image: docker.io/sgkens/phellams-automator:${AUTOMATOR_VERSION}
+  tags:
+    - docker
+  artifacts:
+    paths:
+      - ./dist
+      - ./coverage.xml
+      - ./build.env
+    #expire_in: 1 week
+  before_script:
+      - |
+        git fetch --all
+        git clone https://gitlab.com/phellams/automator-devops.git
+
+# ______________________________________________________
+# ########| @Define the stages of the pipeline |########
+
 stages:
   - test
   - build
+  - release
   - deploy
 
-build-job:
+# ______________________________________________________
+# ########| @Define pipeline-wide workflow control |####
+
+workflow:
+  rules:
+    - when: always
+
+# ____________________________________________________________
+# ########| @Define job templates for reuse (via YAML anchors)
+
+.test_template: &test_template
   stage: test
-  tags:
-    - pwsh
-  script:
-    - pwsh.exe
-    - write-host -f green "template ci\cd config successfull"
-pester-job:
-  stage: build
-  tags:
-    - pwsh
-  script:
-    - pwsh.exe
-    - write-host -f green "template ci\cd config successfull"
-test-pwsh-job:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+      #?NOTE: gitlab supports REGEX RE2 regular expression engine
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|preview|prerelease)(?:\.\d+[a-z]*)?)?(?:\+[a-zA-Z0-9-.]+)?$/
+      when: always
+
+.build_template: &build_template
   stage: deploy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|preview|prerelease)(?:\.\d+[a-z]*)?)?(?:\+[a-zA-Z0-9-.]+)?$/
+      when: always
+
+.release_template: &release_template
+  stage: release
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|preview|prerelease)(?:\.\d+[a-z]*)?)?(?:\+[a-zA-Z0-9-.]+)?$/
+      when: on_success
+
+.deploy_template: &deploy_template
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|preview|prerelease)(?:\.\d+[a-z]*)?)?(?:\+[a-zA-Z0-9-.]+)?$/
+      when: on_success
+
+.deploy_template_choco: &deploy_template_choco
+  stage: deploy
+  image: docker.io/chocolatey/choco:v2.5.1
   tags:
-    - pwsh
+    - docker
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+(?:-(?:alpha|beta|rc|preview|prerelease)(?:\.\d+[a-z]*)?)?(?:\+[a-zA-Z0-9-.]+)?$/
+      when: manual
+  allow_failure: true
+
+# ____________________________________________________________
+# ########|----> |||| Test Stage |||| <----###################
+
+pester:
+  <<: *test_template
   script:
-    - pwsh.exe
-    - write-host -f green "template ci\cd config successfull"
+    - |
+      pwsh -c Invoke-Pester -Script ./test/test-unit-pester.ps1 -CI || exit 1
+
+pester_coverage:
+  <<: *test_template
+  needs:
+    - job: pester
+      artifacts: false
+  script:
+    - |
+      pwsh -c Invoke-Pester -Script ./automator-devops/scripts/test/test-pester-before-build.ps1 -CI || exit 1
+
+# ____________________________________________________________
+# ########|----> |||| Build Stage |||| <----##################
+
+psmpacker_build:
+  <<: *build_template
+  stage: build
+  needs:
+    - job: pester
+      artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/build/build-module.ps1 || exit 1
+      
+analyzer:
+  <<: *build_template
+  stage: build
+  needs:
+    - job: psmpacker_build
+      artifacts: true
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/test/test-sa-before-build.ps1
+
+nupsforge_general_nuget_package:
+  <<: *build_template
+  stage: build
+  needs:
+    - job: psmpacker_build
+      artifacts: true
+    - job: analyzer
+      artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/build/build-package-generic-nuget.ps1 || exit 1
+
+nupsforge_chocolatey_nupsec_file:
+  <<: *build_template
+  stage: build
+  needs:
+    - job: psmpacker_build
+      artifacts: true
+    - job: analyzer
+      artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/build/build-nuspec-choco.ps1 || exit 1
+
+mono_chocolatey_package:
+  <<: *build_template
+  stage: build
+  image: docker.io/chocolatey/choco:v2.5.1
+  needs:
+    - job: psmpacker_build
+      artifacts: true
+    - job: nupsforge_chocolatey_nupsec_file
+      artifacts: true
+    - job: analyzer
+      artifacts: false
+  before_script:
+    - |
+      echo "Install git cli"
+      apt-get update
+      apt-get install -y git
+      git clone https://gitlab.com/phellams/automator-devops.git
+  script:
+    - |
+      chmod +x ./automator-devops/scripts/build/build-package-choco.sh || exit 1
+      ./automator-devops/scripts/build/build-package-choco.sh || exit 1
+
+zip_build:
+  <<: *build_template
+  stage: build
+  needs:
+    - job: nupsforge_general_nuget_package
+      artifacts: true
+    - job: analyzer
+      artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/build/build-package-psgallery.ps1 || exit 1
+
+# ____________________________________________________________
+# ########|----> |||| Release Stage |||| <----################
+
+upload_artifacts:
+  <<: *release_template
+  needs:
+   - job: psmpacker_build
+     artifacts: true
+   - job: zip_build
+     artifacts: true
+   - job: nupsforge_general_nuget_package
+     artifacts: true
+   - job: mono_chocolatey_package
+     artifacts: true
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/deploy/deploy-artifacts.ps1 || exit 1
+      
+# Create Git tag from the current commit
+# git_tag:
+#   <<: *release_template
+#   needs:
+#     - job: upload_artifacts
+#       artifacts: false
+#     - job: psmpacker_build
+#       artifacts: true
+#   script:
+#     - |
+#       pwsh -c ./automator-devops/scripts/release/create-tag.ps1 || exit 1
+
+# Mirror the repository to GitHub and GitLab
+# mirror_pointer_github:
+#   <<: *release_template
+#   needs:
+#     - job: git_tag
+#       artifacts: false
+#   script:
+#     - |
+#       pwsh -c ./automator-devops/scripts/release/mirror-create-pointers.ps1 || exit 1
+#   rules:
+#     - if: $CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+.*$/
+#       when: always
+
+# mirror_pointer_gitlab:
+#   <<: *release_template
+#   needs:
+#     - job: git_tag
+#       artifacts: false
+#   script:
+#     - ./build/scripts/mirror-pointer-gitlab.ps1
+
+gitlab_release:
+  <<: *release_template
+  needs:
+    - job: psmpacker_build
+      artifacts: true
+    - job: upload_artifacts
+      artifacts: true
+    # - job: git_tag
+    #   artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/release/release-from-tag-gitlab.ps1 || exit 1
+
+# github_release:
+#   <<: *release_template
+#   needs:
+#     - job: nupsforge_general_nuget_package
+#       artifacts: true
+#     - job: git_tag
+#       artifacts: false
+#     - job: mirror_pointer_github
+#       artifacts: false
+#     - job: gitlab_release
+#       artifacts: false
+#   script:
+#     - |
+#       pwsh
+#       ./build/scripts/release/release-from-tag-github.ps1 || exit 1
+
+codecov_release_coverage:
+  <<: *release_template 
+  needs: 
+    - job: pester_coverage
+      artifacts: true
+    # - job: git_tag
+    #   artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/release/release-codecov-report.ps1 || exit 1
+  
+
+# coveralls_release_coverage:
+#   <<: *release_template 
+#   needs: 
+#     - job: pester_coverage
+#       artifacts: true
+#   script:
+#     - ./automator-devops/scripts/release/release-codecov-report.ps1
+
+# ____________________________________________________________
+# ########|----> |||| Deploy Stage |||| <----################
+
+upload_gitlab_package:
+  <<: *deploy_template
+  needs:
+    - job: nupsforge_general_nuget_package
+      artifacts: true
+    - job: gitlab_release
+      artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/deploy/deploy-gitlab.ps1 || exit 1
+
+# proget_nuget:
+#   <<: *deploy_template
+#   needs:
+#     - job: nupsforge_general_nuget_package
+#       artifacts: true
+#   script:
+#     - ./automator-devops/scripts/deploy-proget.ps1
+
+upload_psgallery:
+  <<: *deploy_template
+  needs:
+   - job: psmpacker_build
+     artifacts: true
+   - job: zip_build
+     artifacts: true
+   - job: gitlab_release
+     artifacts: false
+  script:
+    - |
+      pwsh -c ./automator-devops/scripts/deploy/deploy-psgallary.ps1 || exit 1
+
+upload_chocolatey:
+  <<: *deploy_template_choco
+  needs:
+    - job: psmpacker_build
+      artifacts: true
+    - job: mono_chocolatey_package
+      artifacts: true
+    - job: gitlab_release
+      artifacts: false
+    - job: upload_psgallery
+      artifacts: false
+  before_script:
+    - |
+      echo "Install git cli"
+      apt-get update
+      apt-get install -y git
+      git clone https://gitlab.com/phellams/automator-devops.git
+  script:
+    - |
+      chmod +x ./automator-devops/scripts/deploy/deploy-choco.sh || exit 1
+      ./automator-devops/scripts/deploy/deploy-choco.sh || exit 1
+      
