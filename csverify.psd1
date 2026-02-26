@@ -1,9 +1,9 @@
 @{
 
     RootModule             = "csverify.psm1"
-    ModuleVersion     = '0.3.7'
+    ModuleVersion          = '0.3.7'
     CompatiblePSEditions   = @()
-    GUID                   = 'c7e7262e-8c66-4c0d-9454-9927449c2927'
+    GUID                   = '40544ed6-8155-48b9-8b8e-9b8817d045cc'
     Author                 = 'Garvey k. Snow'
     CompanyName            = 'sgkens'
     Copyright              = '2023 Garvey k. Snow. All rights reserved.'
