@@ -23,7 +23,8 @@
             "readme.txt"
         ],
         "modulefolders": [
-            "libs"
+            "libs",
+            "tools"
         ],
         "moduleexclude": [
             "commit-helper.ps1"
