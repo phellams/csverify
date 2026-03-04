@@ -40,7 +40,7 @@
             IconUri                    = 'https://raw.githubusercontent.com/phellams/phellams-general-resources/main/logos/csverify/dist/png/csverify-128x128.png'
             ReleaseNotes               = 'https://gitlab.com/phellams/csverify/-/blob/main/Releases'
             # CHOCOLATE ---------------------
-            ChocoDescription = 'A PowerShell module for advanced file and folder searching with configuration management.'
+            ChocoDescription = 'Powershell Module Designed to assist in ensuring the integrity of a codebase by generating and verifying a VERIFICATION.txt file, created for poweshell packages distributed via chocolatey, can be used to verify the integrity of any codebase.'
             ChocoTitle       = 'csverify - Powershell Checksum Verification Module.'
             LicenseUrl       = 'https://choosealicense.com/licenses/mit'
             ProjectUrl       = 'https://gitlab.com/phellams/csverify'
@@ -49,7 +49,7 @@
             MailingListUrl   = 'https://gitlab.com/phellams/csverify/-/blob/main/README.md'
             projectSourceUrl = 'https://gitlab.com/phellams/csverify'
             bugTrackerUrl    = 'https://gitlab.com/phellams/csverify/issues'
-            Summary          = 'Powershell Module Designed to assist in ensuring the integrity of a codebase by generating and verifying a VERIFICATION.txt file, created for poweshell packages distributed via chocolatey, can be used to verify the integrity of any codebase.'
+            Summary          = 'csverify - Powershell Checksum Verification Module.'
             # CHOCOLATE ---------------------
             # Prerelease               = 'prerelease'
         }
